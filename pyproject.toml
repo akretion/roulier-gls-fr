@@ -2,7 +2,7 @@
 name = "roulier-gls-fr"
 version = "0.1.0"
 description = "Send parcels with GLS France delivery carrier. Carrier return parcel label and traceability url"
-license = "AGPL-3.0+"
+license = "AGPL-3.0"
 authors = ["David Béal <david.beal@akretion.com>"]
 readme = "README.rst"
 homepage = "https://github.com/akretion.roulier-gls-fr"

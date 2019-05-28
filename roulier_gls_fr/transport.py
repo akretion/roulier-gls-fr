@@ -1,16 +1,14 @@
 """ Implement Gls WS transport"""
 
 import requests
-from lxml import objectify, etree
-from jinja2 import Environment, PackageLoader
+from string import Template
 from roulier.transport import Transport
-from roulier.ws_tools import remove_empty_tags, get_parts
 from roulier.exception import CarrierError
 import logging
 
 log = logging.getLogger(__name__)
 
-
+WEB_SERVICE_CODING = 'ISO-8859-1'
 URL_PROD = "http://www.gls-france.com/cgi-bin/glsboxGI.cgi"
 URL_TEST = "http://www.gls-france.com/cgi-bin/glsboxGITest.cgi"
 
@@ -18,14 +16,11 @@ URL_TEST = "http://www.gls-france.com/cgi-bin/glsboxGITest.cgi"
 class GlsTransport(Transport):
     """Implement Gls WS communication."""
 
-    GLS_WS = URL_TEST
-
     def send(self, payload):
         """Call this function.
 
         Args:
-            payload.body: XML in a string
-            payload.header : auth
+            payload: input in carrier format
         Return:
             {
                 response: (Requests.response)
@@ -33,38 +28,22 @@ class GlsTransport(Transport):
                 parts: dict of attachments
             }
         """
-        body = payload['body']
-        headers = payload['headers']
-        soap_message = self.soap_wrap(body, headers)
-        log.debug(soap_message)
-        response = self.send_request(soap_message)
+        response = self.send_request(payload)
         return self.handle_response(response)
 
-    def soap_wrap(self, body, headers):
-        """Wrap body in a soap:Enveloppe."""
-        env = Environment(
-            loader=PackageLoader('roulier', '/carriers/Gls/templates'),
-            extensions=['jinja2.ext.with_'])
-
-        template = env.get_template("Gls_soap.xml")
-        body_stripped = remove_empty_tags(body)
-        data = template.render(body=body_stripped)
-        return data.encode('utf8')
-
-    def send_request(self, body):
+    def send_request(self, payload):
         """Send body to Gls WS."""
-        return requests.post(
-            self.GLS_WS,
-            headers={'content-type': 'text/xml;charset=UTF-8'},
-            data=body)
+        ws_url = URL_PROD
+        if payload.get('isTest'):
+            ws_url = URL_TEST
+        headers = {
+            'content-type': 'text/plain;charset=%s' % WEB_SERVICE_CODING}
+        return requests.post(ws_url, headers=headers, data=payload.get('data'))
 
     def handle_500(self, response):
         """Handle reponse in case of ERROR 500 type."""
         log.warning('Gls error 500')
-        obj = objectify.fromstring(response.text)
         errors = [{
-            "id": obj.xpath('//faultcode')[0],
-            "message": obj.xpath('//faultstring')[0],
         }]
         raise CarrierError(response, errors)
 
@@ -74,42 +53,13 @@ class GlsTransport(Transport):
 
         It still can be a success or a failure.
         """
-        def raise_on_error(response_xml):
-            xml = objectify.fromstring(response_xml)
-            messages = xml.xpath('//messages')
-            errors = [
-                {
-                    'id': message.id,
-                    'message': unicode(message.messageContent),
-                }
-                for message in messages if message.type == "ERROR"
-            ]
-            if len(errors) > 0:
-                raise CarrierError(response, errors)
 
-        def extract_xml(response):
+        def extract_response_string(response):
             """Because the answer is mixedpart we need to extract."""
-            content_type = response.headers['Content-Type']
-            boundary = content_type.split('boundary="')[1].split('";')[0]
-            start = content_type.split('start="')[1].split('";')[0]
+            return response._content.decode('ISO-8859-1')
 
-            between_boundaries = response.text.split("--%s" % boundary)[1]
-            after_start = between_boundaries.split(start)[1]
-            clean_xml = after_start.strip()  # = trim()
-            return clean_xml
-
-        def extract_body(response_xml):
-            """Remove soap wrapper."""
-            xml = objectify.fromstring(response_xml)
-            payload_xml = xml.Body.getchildren()[0]
-            return etree.tostring(payload_xml)
-
-        response_xml = extract_xml(response)
-        raise_on_error(response_xml)
         return {
-            'body': extract_body(response_xml),
-            'parts': get_parts(response),
-            'response': response,
+            'body': extract_response_string(response),
         }
 
     def handle_response(self, response):

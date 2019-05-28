@@ -23,11 +23,11 @@ class Gls(Carrier):
         response = self.ws.send(request)
         return self.decoder.decode(
             response['body'],
-            response['parts'],
-            request['output_format']
+            # response['parts'],
+            # request['output_format']
         )
 
     # shortcuts
     def get_label(self, data):
-        """ Generate a generateLabelRequest """
-        return self.get(data, 'generateLabelRequest')
+        """ Generate a label """
+        return self.get(data, 'label')
