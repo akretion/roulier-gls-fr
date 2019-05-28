@@ -1,7 +1,6 @@
 """ Implement Gls WS transport"""
 
 import requests
-from string import Template
 from roulier.transport import Transport
 from roulier.exception import CarrierError
 import logging

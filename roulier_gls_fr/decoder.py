@@ -16,7 +16,6 @@ class GlsDecoder(Decoder):
 
         data = self.exotic_serialization_to_dict(body)
         self.raise_on_error(data)
-        import pdb; pdb.set_trace()
         print(data)
         return data
 
@@ -69,9 +68,7 @@ code: %s ; message: %s ; result: %s""" % (code, message, result))
                 log.info("""
         >>> Rescue label will be printed instead of the standard label""")
         if len(errors) > 0:
-            import pdb; pdb.set_trace()
             raise CarrierError(ResponseObject(result), errors[0])
-        print("la")
         return False
 
 

@@ -1,7 +1,7 @@
 import logging
 from datetime import date
 
-from roulier_gls_fr import __version__
+# from roulier_gls_fr import __version__
 from roulier_gls_fr.gls import Gls
 
 logger = logging.getLogger(__name__)
@@ -14,10 +14,6 @@ except ImportError:
         "To test with real credentials copy and paste "
         "tests/credential_demo.py to tests/credential.py and "
         "fill it with real values")
-
-
-def test_version():
-    assert __version__ == "0.1.0"
 
 
 def test_connexion():
@@ -48,7 +44,7 @@ def test_connexion():
                 "company": "my customer",
                 "name": "Martine MARTIN",
                 "street1": "13 avenue des champs Elysées",
-                "zip": "75000",
+                "zip": "75001",
                 "city": "Paris",
                 "phone": "01 99 99 99 99",
                 "email": "contact@mycustomer.fr",
